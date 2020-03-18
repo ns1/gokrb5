@@ -1,6 +1,6 @@
-module github.com/jcmturner/gokrb5/v8
+module github.com/ns1/gokrb5/v8
 
-go 1.13
+go 1.14
 
 require (
 	github.com/gorilla/sessions v1.2.0
