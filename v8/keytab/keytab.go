@@ -12,7 +12,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/jcmturner/gokrb5/v8/types"
+	"github.com/ns1/gokrb5/v8/types"
 )
 
 const (
@@ -22,20 +22,20 @@ const (
 // Keytab struct.
 type Keytab struct {
 	version uint8
-	Entries []entry
+	Entries []Entry
 }
 
-// Keytab entry struct.
-type entry struct {
-	Principal principal
+// Entry is an entry in a keytab struct.
+type Entry struct {
+	Principal Principal
 	Timestamp time.Time
 	KVNO8     uint8
 	Key       types.EncryptionKey
 	KVNO      uint32
 }
 
-// Keytab entry principal struct.
-type principal struct {
+// Principal is a single principal.
+type Principal struct {
 	NumComponents int16 `json:"-"`
 	Realm         string
 	Components    []string
@@ -44,14 +44,14 @@ type principal struct {
 
 // New creates new, empty Keytab type.
 func New() *Keytab {
-	var e []entry
+	var e []Entry
 	return &Keytab{
 		version: 0,
 		Entries: e,
 	}
 }
 
-// GetEncryptionKey returns the EncryptionKey from the Keytab for the newest entry with the required kvno, etype and matching principal.
+// GetEncryptionKey returns the EncryptionKey from the Keytab for the newest Entry with the required kvno, etype and matching Principal.
 // If the kvno is zero then the latest kvno will be returned. The kvno is also returned for
 func (kt *Keytab) GetEncryptionKey(princName types.PrincipalName, realm string, kvno int, etype int32) (types.EncryptionKey, int, error) {
 	var key types.EncryptionKey
@@ -81,10 +81,10 @@ func (kt *Keytab) GetEncryptionKey(princName types.PrincipalName, realm string, 
 	return key, kvno, nil
 }
 
-// Create a new Keytab entry.
-func newEntry() entry {
+// Create a new Keytab Entry.
+func newEntry() Entry {
 	var b []byte
-	return entry{
+	return Entry{
 		Principal: newPrincipal(),
 		Timestamp: time.Time{},
 		KVNO8:     0,
@@ -96,10 +96,10 @@ func newEntry() entry {
 	}
 }
 
-// Create a new principal.
-func newPrincipal() principal {
+// Create a new Principal.
+func newPrincipal() Principal {
 	var c []string
-	return principal{
+	return Principal{
 		NumComponents: 0,
 		Realm:         "",
 		Components:    c,
@@ -226,7 +226,7 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 				// Handles if the value from the last 4 bytes was zero and also if there are not the 4 bytes present. Makes sense to put the same value here as KVNO8
 				ke.KVNO = uint32(ke.KVNO8)
 			}
-			// Add the entry to the keytab
+			// Add the Entry to the keytab
 			kt.Entries = append(kt.Entries, ke)
 		}
 		// Check if there are still 4 bytes left to read
@@ -234,7 +234,7 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 		if n < 0 || n > len(b) || len(b[n:]) < 4 {
 			break
 		}
-		// Read the size of the next entry
+		// Read the size of the next Entry
 		l, err = readInt32(b, &n, &endian)
 		if err != nil {
 			return err
@@ -243,7 +243,7 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 	return nil
 }
 
-func (e entry) marshal(v int) ([]byte, error) {
+func (e Entry) marshal(v int) ([]byte, error) {
 	var b []byte
 	pb, err := e.Principal.marshal(v)
 	if err != nil {
@@ -282,8 +282,8 @@ func (e entry) marshal(v int) ([]byte, error) {
 	return b, nil
 }
 
-// Parse the Keytab bytes of a principal into a Keytab entry's principal.
-func parsePrincipal(b []byte, p *int, kt *Keytab, ke *entry, e *binary.ByteOrder) error {
+// Parse the Keytab bytes of a Principal into a Keytab Entry's Principal.
+func parsePrincipal(b []byte, p *int, kt *Keytab, ke *Entry, e *binary.ByteOrder) error {
 	var err error
 	ke.Principal.NumComponents, err = readInt16(b, p, e)
 	if err != nil {
@@ -323,7 +323,7 @@ func parsePrincipal(b []byte, p *int, kt *Keytab, ke *entry, e *binary.ByteOrder
 	return nil
 }
 
-func (p principal) marshal(v int) ([]byte, error) {
+func (p Principal) marshal(v int) ([]byte, error) {
 	//var b []byte
 	b := make([]byte, 2)
 	var endian binary.ByteOrder
