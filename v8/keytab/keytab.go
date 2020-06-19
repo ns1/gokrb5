@@ -21,7 +21,7 @@ const (
 
 // Keytab struct.
 type Keytab struct {
-	version uint8
+	Version uint8
 	Entries []Entry
 }
 
@@ -36,7 +36,7 @@ type Entry struct {
 
 // Principal is a single principal.
 type Principal struct {
-	NumComponents int16 `json:"-"`
+	NumComponents int16
 	Realm         string
 	Components    []string
 	NameType      int32
@@ -46,7 +46,7 @@ type Principal struct {
 func New() *Keytab {
 	var e []Entry
 	return &Keytab{
-		version: 0,
+		Version: 0,
 		Entries: e,
 	}
 }
@@ -120,9 +120,9 @@ func Load(ktPath string) (*Keytab, error) {
 
 // Marshal keytab into byte slice
 func (kt *Keytab) Marshal() ([]byte, error) {
-	b := []byte{keytabFirstByte, kt.version}
+	b := []byte{keytabFirstByte, kt.Version}
 	for _, e := range kt.Entries {
-		eb, err := e.marshal(int(kt.version))
+		eb, err := e.marshal(int(kt.Version))
 		if err != nil {
 			return b, err
 		}
@@ -153,14 +153,14 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 	}
 	//Get keytab version
 	//The 2nd byte contains the version number (1 or 2)
-	kt.version = b[1]
-	if kt.version != 1 && kt.version != 2 {
+	kt.Version = b[1]
+	if kt.Version != 1 && kt.Version != 2 {
 		return errors.New("invalid keytab data. Keytab version is neither 1 nor 2")
 	}
 	//Version 1 of the file format uses native byte order for integer representations. Version 2 always uses big-endian byte order
 	var endian binary.ByteOrder
 	endian = binary.BigEndian
-	if kt.version == 1 && isNativeEndianLittle() {
+	if kt.Version == 1 && isNativeEndianLittle() {
 		endian = binary.LittleEndian
 	}
 	// n tracks position in the byte array
@@ -289,7 +289,7 @@ func parsePrincipal(b []byte, p *int, kt *Keytab, ke *Entry, e *binary.ByteOrder
 	if err != nil {
 		return err
 	}
-	if kt.version == 1 {
+	if kt.Version == 1 {
 		//In version 1 the number of components includes the realm. Minus 1 to make consistent with version 2
 		ke.Principal.NumComponents--
 	}
@@ -313,7 +313,7 @@ func parsePrincipal(b []byte, p *int, kt *Keytab, ke *Entry, e *binary.ByteOrder
 		}
 		ke.Principal.Components = append(ke.Principal.Components, string(compB))
 	}
-	if kt.version != 1 {
+	if kt.Version != 1 {
 		//Name Type is omitted in version 1
 		ke.Principal.NameType, err = readInt32(b, p, e)
 		if err != nil {
